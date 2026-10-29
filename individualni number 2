@@ -1,0 +1,62 @@
+import re
+import sqlite3
+
+connection = sqlite3.connect(":memory:")
+cursor = connection.cursor()
+
+cursor.execute("""
+CREATE TABLE students (
+    name TEXT,
+    group_name TEXT,
+    score INTEGER,
+    attendance INTEGER
+)
+""")
+
+students = [
+    ("Aida", "IS-24-01", 82, 91),
+    ("Miras", "IS-24-01", 69, 88),
+    ("Dana", "IS-24-02", 91, 96),
+    ("Timur", "IS-24-02", 55, 62),
+    ("Aliya", "IS-24-03", 65, 70),
+    ("Arman", "IS-24-03", 55, 72)
+]
+
+cursor.executemany("INSERT INTO students VALUES (?, ?, ?, ?)", students)
+
+try:
+    score_limit = int(input("Enter the score limit: "))
+    attendance_limit = int(input("Enter the attendance limit: "))
+
+    sql = """
+    SELECT name, group_name, score, attendance
+    FROM students
+    WHERE score < ? AND attendance < ?
+    """
+
+    results = cursor.execute(
+        sql, (score_limit, attendance_limit)
+    ).fetchall()
+
+    group_pattern = r"[A-Z]{2}-\d{2}-\d{2}"
+
+    valid_risk = [
+        row for row in results
+        if re.fullmatch(group_pattern, row[1])
+    ]
+
+    if valid_risk:
+        print("At-risk students:")
+        for row in valid_risk:
+            print(
+                f"{row[0]} ({row[1]}) - "
+                f"Score: {row[2]}, Attendance: {row[3]}%"
+            )
+    else:
+        print("No at-risk students found.")
+
+except ValueError:
+    print("Error: Please enter valid numbers.")
+
+finally:
+    connection.close()
